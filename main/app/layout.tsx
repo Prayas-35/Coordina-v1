@@ -13,21 +13,20 @@ export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en">
-      <head>
-        <body className={`antialiased`}>
+    <html lang="en" suppressHydrationWarning>
+      <head />
+      <body className="antialiased">
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="system"
+          enableSystem
+          disableTransitionOnChange
+        >
           <AuthProvider>
-            <ThemeProvider
-              attribute="class"
-              defaultTheme="system"
-              enableSystem
-              disableTransitionOnChange
-            />
             <Providers>{children}</Providers>
           </AuthProvider>
-          {/* </ThemeProvider> */}
-        </body>
-      </head>
+        </ThemeProvider>
+      </body>
     </html>
   );
 }
