@@ -10,6 +10,7 @@ import { verifyToken } from "@/app/_middleware/verify";
 interface DepartmentDocument extends Document {
     username: string;
     uid: string;
+    department: string;
 }
 
 async function getHandler(req: Request): Promise<Response> {
@@ -31,8 +32,8 @@ async function getHandler(req: Request): Promise<Response> {
             return NextResponse.json({ error: "Department not found" }, { status: 404 });
         }
 
-        const { username: name, uid } = dept;
-        return NextResponse.json({ name, uid }, { status: 200 });
+        const { username: name, uid, department } = dept;
+        return NextResponse.json({ name, uid, department }, { status: 200 });
     } catch (error) {
         console.error("Error getting department", error);
         return NextResponse.json({ error: "Error getting department" }, { status: 500 });

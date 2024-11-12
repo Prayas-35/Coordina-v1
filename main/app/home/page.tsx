@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+
+import React, { useState, useEffect, useRef, use } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Collapsible,
@@ -66,31 +67,17 @@ interface ChartData {
 ChartJS.register(ArcElement, Tooltip, Legend);
 
 // Dynamically import Leaflet components
-const MapContainer = dynamic(
-  () => import("react-leaflet").then((mod) => mod.MapContainer),
-  { ssr: false }
-);
-
-const TileLayer = dynamic(
-  () => import("react-leaflet").then((mod) => mod.TileLayer),
-  { ssr: false }
-);
-
-const Marker = dynamic(
-  () => import("react-leaflet").then((mod) => mod.Marker),
-  { ssr: false }
-);
-
-const Popup = dynamic(
-  () => import("react-leaflet").then((mod) => mod.Popup),
-  { ssr: false }
-);
+const MapContainer = dynamic(() => import("react-leaflet").then((mod) => mod.MapContainer), { ssr: false });
+const TileLayer = dynamic(() => import("react-leaflet").then((mod) => mod.TileLayer), { ssr: false });
+const Marker = dynamic(() => import("react-leaflet").then((mod) => mod.Marker), { ssr: false });
+const Popup = dynamic(() => import("react-leaflet").then((mod) => mod.Popup), { ssr: false });
 
 export default function Home(): JSX.Element {
   const { token } = useAuth();
   const [projects, setProjects] = useState<Project[]>([]);
   const [isGenerating, setIsGenerating] = useState<boolean>(false);
   const [isClient, setIsClient] = useState<boolean>(false);
+  const mapInitializedRef = useRef(false);
 
   const genAI = new GoogleGenerativeAI(process.env.NEXT_PUBLIC_GEMINI_API_KEY as string);
   const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
@@ -118,6 +105,37 @@ export default function Home(): JSX.Element {
   });
 
   const [generatedReport, setGeneratedReport] = useState<string>("");
+  const [department, setDepartment] = useState<string>("");
+
+  useEffect(() => {
+    if (!mapInitializedRef.current) {
+      setIsClient(true);
+      mapInitializedRef.current = true;
+    }
+  }, []);
+
+  useEffect(() => {
+    const fetchDepartments = async (): Promise<void> => {
+      try {
+        const response = await fetch("/api/getName", {
+          headers: {
+            Authorization: token as string,
+          },
+        });
+        if (response.ok) {
+          const data = await response.json();
+          setDepartment(data.department);
+        } else {
+          console.error("Failed to fetch department name");
+        }
+      } catch (error) {
+        console.error("Failed to fetch department name", error);
+      }
+    }
+    if (token) {
+      fetchDepartments();
+    }
+  }, [token]);
 
   useEffect(() => {
     const fetchProjects = async (): Promise<void> => {
@@ -143,10 +161,6 @@ export default function Home(): JSX.Element {
       fetchProjects();
     }
   }, [token]);
-
-  useEffect(() => {
-    setIsClient(true);
-  }, []);
 
   const chartData: ChartData = {
     labels: ["Completed", "In Progress", "Upcoming"],
@@ -192,16 +206,19 @@ export default function Home(): JSX.Element {
     try {
       const report = `
         generate me a government project report based on the following details:
-        department: Water department
-        project name: ${reportData.projectName}
-        location: ${reportData.location}
-        time taken: ${reportData.timeTaken}
-        resources used: ${reportData.resourcesUsed}
-        cost: ${reportData.cost}
-        other details: ${reportData.otherDetails}
+        Department: ${department}
+        Project Name: ${reportData.projectName}
+        Location: ${reportData.location}
+        Time Taken: ${reportData.timeTaken}
+        Resources Used: ${reportData.resourcesUsed}
+        Cost: ${reportData.cost}
+        Other Details: ${reportData.otherDetails}
       `;
       const result = await model.generateContent(report);
-      setGeneratedReport(result.response.text());
+      const cleanReport = result.response.text()
+        .replace(/[#\*]/g, '')  // Removes asterisks and hashes
+        .trim();  // Removes leading and trailing whitespaces
+      setGeneratedReport(cleanReport);
     } catch (error) {
       console.error("Failed to generate report", error);
     }
@@ -269,12 +286,7 @@ export default function Home(): JSX.Element {
               <CardContent>
                 <div style={{ height: "300px" }}>
                   {/* {isClient && (
-                    <MapContainer
-                      className="z-20"
-                      center={mapCenter}
-                      zoom={13}
-                      style={{ height: "100%", width: "100%" }}
-                    >
+                    <MapContainer center={mapCenter} zoom={13} style={{ height: "100%", width: "100%" }}>
                       <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
                       {projectLocations.map((loc) => (
                         <Marker key={loc.id} position={loc.position}>
