@@ -60,7 +60,7 @@ class CustomAPILLM(LLM):
         )
         return chat_completion.choices[0].message.content
 
-loader = TextLoader("data.txt")
+loader = TextLoader(file_path="data.txt", encoding="utf-8")
 docs = loader.load()
 
 text_splitter = CharacterTextSplitter(chunk_size=3000, chunk_overlap=500)
