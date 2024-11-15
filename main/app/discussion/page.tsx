@@ -10,11 +10,22 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { CalendarIcon, MessageCircleIcon, XCircleIcon, CheckCircleIcon } from "lucide-react";
+import { CalendarIcon, MessageCircleIcon, XCircleIcon, CheckCircleIcon, SendIcon } from "lucide-react";
 import Navbar from "@/components/functions/NavBar";
 import { TbMessageChatbot } from "react-icons/tb";
 
-// Define types and interfaces
+// Types and interfaces
+interface Message {
+    role: 'user' | 'assistant';
+    content: string;
+    timestamp: string;
+}
+
+interface ChatMessage {
+    role: string;
+    content: string;
+}
+
 interface Discussion {
     id: number;
     title: string;
@@ -28,7 +39,7 @@ interface Discussion {
 type Department = "Road Department" | "Water Department" | "Electric Department";
 type FilterType = Department | "All";
 
-// Mock data with proper typing
+// Mock data
 const mockDiscussions: Discussion[] = [
     {
         id: 1,
@@ -56,13 +67,23 @@ const DiscussionForum: React.FC = () => {
     const [selectedDiscussion, setSelectedDiscussion] = useState<Discussion | null>(null);
     const [isChatboxOpen, setIsChatboxOpen] = useState<boolean>(false);
 
+    // New state for chat functionality
+    const [messages, setMessages] = useState<Message[]>([
+        {
+            role: 'assistant',
+            content: 'Hello! How can I assist you today?',
+            timestamp: new Date().toISOString()
+        }
+    ]);
+    const [inputMessage, setInputMessage] = useState('');
+    const [isLoading, setIsLoading] = useState(false);
+
     const filteredDiscussions = filter === "All"
         ? discussions
         : discussions.filter((d) => d.department === filter);
 
     const handleCreateDiscussion = (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault();
-
         const formData = new FormData(event.currentTarget);
         const title = formData.get('title') as string;
         const description = formData.get('description') as string;
@@ -79,10 +100,9 @@ const DiscussionForum: React.FC = () => {
 
         setDiscussions((prevDiscussions) => [...prevDiscussions, newDiscussion]);
         setIsDialogOpen(false);
-        console.log("New discussion created", newDiscussion);
     };
 
-    const handleStatus = (): void => {
+    const handleStatus = () => {
         if (selectedDiscussion) {
             const updatedDiscussions = discussions.map((discussion) => {
                 if (discussion.id === selectedDiscussion.id) {
@@ -102,8 +122,66 @@ const DiscussionForum: React.FC = () => {
                     status: prev.status === "Open" ? "Resolved" : "Open",
                 };
             });
+        }
+    };
 
-            console.log(`Discussion status updated to ${selectedDiscussion.status === "Open" ? "Resolved" : "Open"}`);
+    // New chat functionality
+    const sendMessage = async () => {
+        if (!inputMessage.trim()) return;
+
+        const userMessage: Message = {
+            role: 'user',
+            content: inputMessage,
+            timestamp: new Date().toISOString()
+        };
+
+        setMessages(prev => [...prev, userMessage]);
+        setInputMessage('');
+        setIsLoading(true);
+
+        try {
+            const response = await fetch('http://localhost:8000/v1/generate', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    prompt: inputMessage,
+                    context: messages.map(msg => `${msg.role}: ${msg.content}`).join('\n')
+                })
+            });
+            console.log(response);
+
+            if (!response.ok) {
+                throw new Error('Failed to get response');
+            }
+
+            const data = await response.json();
+
+            const assistantMessage: Message = {
+                role: 'assistant',
+                content: data,
+                timestamp: new Date().toISOString()
+            };
+
+            setMessages(prev => [...prev, assistantMessage]);
+        } catch (error) {
+            console.error('Error sending message:', error);
+            const errorMessage: Message = {
+                role: 'assistant',
+                content: 'Sorry, I encountered an error. Please try again.',
+                timestamp: new Date().toISOString()
+            };
+            setMessages(prev => [...prev, errorMessage]);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const handleKeyPress = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            sendMessage();
         }
     };
 
@@ -251,6 +329,7 @@ const DiscussionForum: React.FC = () => {
                 </div>
             </div>
 
+            {/* Updated Chatbox UI */}
             <div className="fixed bottom-10 right-10">
                 <button
                     className="p-3 rounded-full bg-purple-600 text-white shadow-lg size-16"
@@ -261,9 +340,12 @@ const DiscussionForum: React.FC = () => {
             </div>
 
             {isChatboxOpen && (
-                <div className="fixed bottom-28 right-10 w-[300px] dark:bg-slate-950 bg-white shadow-lg rounded-lg p-4">
+                <div className="fixed bottom-28 right-10 w-[400px] dark:bg-slate-950 bg-white shadow-lg rounded-lg p-4 z-50">
                     <div className="flex justify-between items-center mb-4">
-                        <h2 className="text-lg font-bold">Chat with Us</h2>
+                        <div className="flex items-center gap-2">
+                            <TbMessageChatbot className="size-6 text-purple-600" />
+                            <h2 className="text-lg font-bold">AI Assistant</h2>
+                        </div>
                         <button
                             onClick={() => setIsChatboxOpen(false)}
                             className="text-gray-500 hover:text-gray-800"
@@ -271,12 +353,53 @@ const DiscussionForum: React.FC = () => {
                             <XCircleIcon className="w-6 h-6" />
                         </button>
                     </div>
-                    <div className="h-[200px] mb-4 p-2 dark:bg-gray-900 bg-gray-100 rounded overflow-y-auto">
-                        <p className="text-sm dark:text-gray-200 text-gray-600">Hello! How can we assist you today?</p>
-                    </div>
+
+                    <ScrollArea className="h-[400px] mb-4 p-2 dark:bg-gray-900 bg-gray-100 rounded">
+                        <div className="space-y-4">
+                            {messages.map((message, index) => (
+                                <div
+                                    key={index}
+                                    className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
+                                >
+                                    <div
+                                        className={`max-w-[80%] p-3 rounded-lg ${message.role === 'user'
+                                            ? 'bg-purple-600 text-white'
+                                            : 'bg-gray-200 dark:bg-gray-800 dark:text-gray-200'
+                                            }`}
+                                    >
+                                        <p className="text-sm">{message.content}</p>
+                                        <span className="text-xs opacity-70 mt-1 block">
+                                            {new Date(message.timestamp).toLocaleTimeString()}
+                                        </span>
+                                    </div>
+                                </div>
+                            ))}
+                            {isLoading && (
+                                <div className="flex justify-start">
+                                    <div className="bg-gray-200 dark:bg-gray-800 p-3 rounded-lg">
+                                        <p className="text-sm">Thinking...</p>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    </ScrollArea>
+
                     <div className="flex items-center space-x-2">
-                        <Textarea placeholder="Type your message..." className="flex-grow" />
-                        <Button className="flex-shrink-0">Send</Button>
+                        <Textarea
+                            value={inputMessage}
+                            onChange={(e) => setInputMessage(e.target.value)}
+                            onKeyPress={handleKeyPress}
+                            placeholder="Type your message..."
+                            className="flex-grow"
+                            rows={1}
+                        />
+                        <Button
+                            onClick={sendMessage}
+                            disabled={isLoading || !inputMessage.trim()}
+                            className="flex-shrink-0"
+                        >
+                            <SendIcon className="size-4" />
+                        </Button>
                     </div>
                 </div>
             )}

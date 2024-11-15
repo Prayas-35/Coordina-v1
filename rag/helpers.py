@@ -55,7 +55,7 @@ class CustomAPILLM(LLM):
                     "content": prompt,
                 }
             ],
-            model="llama-3.2-90b-vision-preview",
+            model="llama-3.1-70b-versatile",
             temperature=2
         )
         return chat_completion.choices[0].message.content
@@ -71,7 +71,8 @@ embeddings = GoogleGenerativeAIEmbeddings(
     google_api_key=GOOGLE_API_KEY,
 )
 
-capath = "isrgrootx1.pem" if os.path.exists("isrgrootx1.pem") else "/etc/ssl/certs/ca-certificates.crt"
+# capath = "isrgrootx1.pem" if os.path.exists("isrgrootx1.pem") else "/etc/ssl/certs/ca-certificates.crt"
+capath = "/etc/ssl/certs/ca-certificates.crt" if os.path.exists("/etc/ssl/certs/ca-certificates.crt") else "isrgrootx1.pem"
 vector_store = TiDBVectorStore.from_documents(
     documents=documents,
     embedding=embeddings,

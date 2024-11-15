@@ -1,14 +1,28 @@
 from fastapi import FastAPI, HTTPException, status
-import uvicorn
+from fastapi.middleware.cors import CORSMiddleware
 from helpers import generate
 from pydantic import BaseModel
 import asyncio
+import uvicorn
 
 class GenerateRequest(BaseModel):
     prompt: str
     context: str
 
-app = FastAPI(title="AI Content Generation API", version="1.0.0", description="This API provides a way to generate text content based on a given prompt and context.")
+app = FastAPI(
+    title="AI Content Generation API",
+    version="1.0.0",
+    description="This API provides a way to generate text content based on a given prompt and context."
+)
+
+# Add CORS middleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:3000"],  # Specify the origin(s) allowed to access the API
+    allow_credentials=True,
+    allow_methods=["*"],  # Allow all HTTP methods
+    allow_headers=["*"],  # Allow all headers
+)
 
 @app.post("/v1/generate", summary="Generate Text Content")
 def generate_response(request: GenerateRequest):
