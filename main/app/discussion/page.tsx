@@ -21,11 +21,6 @@ interface Message {
     timestamp: string;
 }
 
-interface ChatMessage {
-    role: string;
-    content: string;
-}
-
 interface Discussion {
     id: number;
     title: string;
@@ -138,6 +133,7 @@ const DiscussionForum: React.FC = () => {
         setMessages(prev => [...prev, userMessage]);
         setInputMessage('');
         setIsLoading(true);
+        console.log('context:', messages.map(msg => `${msg.role}: ${msg.content}`).join('\n'));
 
         try {
             const response = await fetch('http://localhost:8000/v1/generate', {
