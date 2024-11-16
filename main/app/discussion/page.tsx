@@ -10,9 +10,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { CalendarIcon, MessageCircleIcon, XCircleIcon, CheckCircleIcon, SendIcon } from "lucide-react";
+import { CalendarIcon, MessageCircleIcon, XCircleIcon, CheckCircleIcon, SendIcon } from 'lucide-react';
 import Navbar from "@/components/functions/NavBar";
 import { TbMessageChatbot } from "react-icons/tb";
+import ReactMarkdown from 'react-markdown';
 
 // Types and interfaces
 interface Message {
@@ -363,7 +364,9 @@ const DiscussionForum: React.FC = () => {
                                             : 'bg-gray-200 dark:bg-gray-800 dark:text-gray-200'
                                             }`}
                                     >
-                                        <p className="text-sm">{message.content}</p>
+                                        <ReactMarkdown className="text-sm prose dark:prose-invert max-w-none">
+                                            {message.content}
+                                        </ReactMarkdown>
                                         <span className="text-xs opacity-70 mt-1 block">
                                             {new Date(message.timestamp).toLocaleTimeString()}
                                         </span>

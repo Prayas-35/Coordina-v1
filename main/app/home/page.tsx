@@ -21,6 +21,7 @@ import { LinkPreview } from "@/components/ui/link-preview";
 import "leaflet/dist/leaflet.css";
 import Link from "next/link";
 import { GoogleGenerativeAI } from "@google/generative-ai";
+import ReactMarkdown from 'react-markdown';
 
 // Interfaces
 interface Project {
@@ -216,7 +217,7 @@ export default function Home(): JSX.Element {
       `;
       const result = await model.generateContent(report);
       const cleanReport = result.response.text()
-        .replace(/[#\*]/g, '')  // Removes asterisks and hashes
+        // .replace(/[#\*]/g, '')  // Removes asterisks and hashes
         .trim();  // Removes leading and trailing whitespaces
       setGeneratedReport(cleanReport);
     } catch (error) {

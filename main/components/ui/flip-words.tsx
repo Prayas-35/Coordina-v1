@@ -73,22 +73,18 @@ export const FlipWords = ({
               delay: wordIndex * 0.3,
               duration: 0.3,
             }}
-            className="inline-block whitespace-nowrap"
-          >
-            {word.split("").map((letter, letterIndex) => (
+            className="inline-block whitespace-nowrap">
               <motion.span
-                key={word + letterIndex}
+                key={word}
                 initial={{ opacity: 0, y: 10, filter: "blur(8px)" }}
                 animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
                 transition={{
-                  delay: wordIndex * 0.3 + letterIndex * 0.05,
+                  delay: wordIndex * 0.3 * 0.05,
                   duration: 0.2,
                 }}
-                className="inline-block"
-              >
-                {letter}
+                className="inline-block bg-clip-text text-transparent bg-no-repeat bg-gradient-to-r from-purple-500 via-violet-500 to-pink-500 py-4">
+                {word}
               </motion.span>
-            ))}
             <span className="inline-block">&nbsp;</span>
           </motion.span>
         ))}

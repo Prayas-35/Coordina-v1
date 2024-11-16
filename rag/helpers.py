@@ -10,6 +10,7 @@ from typing import Any, List, Optional
 from groq import Groq
 import dotenv
 import os
+import json
 
 dotenv.load_dotenv()
 
@@ -60,7 +61,7 @@ class CustomAPILLM(LLM):
         return chat_completion.choices[0].message.content
 
 
-loader = TextLoader(file_path="data.txt", encoding="utf-8")
+loader = TextLoader(file_path="data2.txt", encoding="utf-8")
 docs = loader.load()
 
 text_splitter = CharacterTextSplitter(chunk_size=3000, chunk_overlap=500)
@@ -87,75 +88,112 @@ config = CustomConfig(api_url="", api_key=GROQ_API_KEY)
 custom_llm = CustomAPILLM(config=config)
 
 async def generate(quest, conversation_history):
-    rephrasing_prompt = f"""
-        Your name is Cody, an expert in natural language processing and domain-specific analysis for web development, blockchain, cybersecurity, and machine learning.
+    try:
+        # print(conversation_history)
+        rephrasing_prompt = f"""
+            Your name is Murex, an expert in natural language processing and intergovernmental conflict resolution. Your task is to rephrase the user's input into a concise and relevant query optimized for semantic search in a vector database. Follow these strict guidelines:
 
-        Your task:
-        1. Rephrase the question concisely for querying a vector database, ensuring relevance to web development, blockchain, cybersecurity, or machine learning.
-        2. If the input asks for personal details (e.g., "What is your name?"), respond with: 
-        "My name is Cody, your coding mentor specializing in web development, blockchain, cybersecurity, and machine learning."
-        3. If the input is not a question (e.g., "Got it, thanks" or "Okay, Got it"), respond with an appropriate acknowledgment (e.g., "You're welcome!" or "Happy to help!").
-        4. If the question is ambiguous or lacks sufficient detail:
-        - Include a clarification note requesting more information.
-        - If a potential connection to the domains can be assumed based on the conversation history, ask for confirmation using this format:
-            "Are you asking about the intersection of [assumed topic] and [domain]? If yes, I can rephrase accordingly."
-        5. If the input is entirely unrelated to the specified domains and does not fall into the above categories, respond with:
-            "The question is outside the specified domains of expertise."
-        6. if it seems that the conversation has concluded, provide a positive and concise closing statement (e.g., "Bye, See you soon!").
+            1. Focus exclusively on topics related to conflicts, their resolutions, and resource coordination between government departments.
+            2. If the input is a greeting, transition, or unrelated to intergovernmental conflicts, resource optimization, or project management, output "NONE".
+            3. Ensure the output is a single, precise query optimized for vector database semantic search.
+            4. Provide only the resulting query or "NONE" as output, without any additional text, explanation, or formatting.
 
-        ### Input:
-        QUESTION: {quest}
-        CONVERSATION HISTORY: {conversation_history}
-    """
+            **Examples**:
+            - USER INPUT: "How can two departments coordinate roadwork and pipeline projects?"
+            OUTPUT: "Coordination strategies for roadwork and pipeline projects between departments?"
+            - USER INPUT: "What methods are used to resolve scheduling conflicts in government projects?"
+            OUTPUT: "Methods to resolve scheduling conflicts in government projects?"
+            - USER INPUT: "Hey, can you help me plan a vacation?"
+            OUTPUT: "NONE"
+            - USER INPUT: "What are best practices for prioritizing multi-department initiatives?"
+            OUTPUT: "Best practices for prioritizing multi-department initiatives?"
+            - USER INPUT: "Tell me about the weather today."
+            OUTPUT: "NONE"
 
-    client = Groq(api_key=GROQ_API_KEY)
-    chat_completion = client.chat.completions.create(
-        messages=[{"role": "user", "content": rephrasing_prompt}],
-        model=MODEL,
-        temperature=TEMP,
-    )
-    refined_question = chat_completion.choices[0].message.content
+            USER INPUT: {quest}
+            CONTEXT: {conversation_history}
+        """
 
-    prompt_template = f"""
-    You are Cody, an expert coding mentor specializing in web development, machine learning, blockchain, and cybersecurity. 
-        Provide accurate, detailed, and helpful responses based strictly on the given context and conversation history. 
+        client = Groq(api_key=GROQ_API_KEY)
+        chat_completion = client.chat.completions.create(
+            messages=[{"role": "user", "content": rephrasing_prompt}],
+            model=MODEL,
+            temperature=TEMP,
+        )
+        refined_question = chat_completion.choices[0].message.content
 
-        ### Guidelines:
-        1. **Strict Relevance**: Only answer questions directly related to the provided context or conversation history. If a question is irrelevant to the context, clearly state: 
-        - "The question is outside the scope of the provided context, so I cannot answer it."
-        2. **Insufficient Information**: If the context or history does not provide enough details, state explicitly: 
-        - "I don't have enough information to provide a meaningful answer."
-        3. **Code Examples**: Where applicable, include concise and relevant code snippets that directly address the question.
-        4. **Clarity and Simplicity**: Break down complex concepts into simple, clear explanations for better understanding.
-        5. **Best Practices**: Highlight recommended approaches and warn against common mistakes or potential pitfalls.
-        6. **Closing Statement**: If the conversation appears to have concluded, provide a positive and concise closing statement.
-        7. **No Speculation**: Avoid speculative or generic answers. Stick strictly to the context provided.
+        if refined_question == "NONE":
+            prompt_template = f"""
+                You are Murex, an expert mentor specializing in intergovernmental project management, AI-driven conflict resolution, and historical data analysis.
 
-        ### Input Structure:
-        - **Previous Conversation**: 
-        {conversation_history}
-        - **Context**: 
-        {{context}}
-        - **Question**: 
-        {{question}}
-    """
+                Guidelines:  
+                1. If the question falls outside these domains, respond: "The question is outside the scope of the provided context, so I cannot answer it."  
+                2. If the question is a greeting, respond with a friendly greeting.  
 
-    PROMPT = PromptTemplate(
-        template=prompt_template,
-        input_variables=["context", "question"]
-    )
+                ### Question:  
+                {quest}
 
-    chain_type_kwargs = {"prompt": PROMPT}
+                ### Context:
+                {conversation_history}
+            """
 
-    chain = RetrievalQA.from_chain_type(
-        llm=custom_llm,
-        chain_type="stuff",
-        retriever=retriever,
-        input_key="query",
-        return_source_documents=True,
-        chain_type_kwargs=chain_type_kwargs
-    )
 
-    response = chain({"query": refined_question, "question": quest})
-    print(response)
-    return response.get("result", "I don't know.")
+            response = client.chat.completions.create(
+                messages=[{"role": "user", "content": prompt_template}],
+                model=MODEL,
+                temperature=TEMP,
+            )
+            return response.choices[0].message.content
+
+        prompt_template = f"""
+        You are Murex, an expert mentor specializing in intergovernmental project management, AI-driven conflict resolution, and historical data analysis. 
+            Provide accurate, detailed, and helpful responses based strictly on the given context and conversation history. 
+
+            ### Guidelines:
+            1. **Strict Relevance**: Only answer questions directly related to the provided context or conversation history. If a question is irrelevant to the context, clearly state: 
+            - "The question is outside the scope of the provided context, so I cannot answer it."
+            2. **Conflict Resolution Focus**: Leverage insights from historical data and multi-departmental project management principles to address issues such as overlapping projects and resource optimization.
+            3. **Insufficient Information**: If the context or history does not provide enough details, state explicitly: 
+            - "I don't have enough information to provide a meaningful answer."
+            4. **Structured Solutions**: Provide actionable steps or frameworks for resolving conflicts, such as dependency mapping, project prioritization, and coordination guidelines.
+            5. **Clarity and Simplicity**: Break down complex concepts into simple, clear explanations for better understanding.
+            6. **Best Practices**: Highlight recommended approaches for interdepartmental collaboration, such as phased planning and shared resource management, and warn against common pitfalls.
+            7. **Closing Statement**: If the conversation appears to have concluded, provide a positive and concise closing statement.
+            8. **No Speculation**: Avoid speculative or generic answers. Stick strictly to the context provided.
+
+            ### Input Structure:
+            - **Previous Conversation**: 
+            {conversation_history}
+            - **Context**: 
+            {{context}}
+            - **Question**: 
+            {{question}}
+        """
+
+        PROMPT = PromptTemplate(
+            template=prompt_template,
+            input_variables=["context", "question"]
+        )
+
+        chain_type_kwargs = {"prompt": PROMPT}
+
+        chain = RetrievalQA.from_chain_type(
+            llm=custom_llm,
+            chain_type="stuff",
+            retriever=retriever,
+            input_key="query",
+            return_source_documents=True,
+            chain_type_kwargs=chain_type_kwargs
+        )
+
+        response = chain({"query": refined_question, "question": quest})
+        serializable_response = {
+            "result": response.get("result", "I don't know."),
+            "source_documents": [doc.page_content for doc in response.get("source_documents", [])]
+        }
+        print(json.dumps(serializable_response, indent=4))
+        return serializable_response["result"]
+
+    except Exception as e:
+        print(e)
+        return "I am sorry, I am down for the moment. Please try again later."
