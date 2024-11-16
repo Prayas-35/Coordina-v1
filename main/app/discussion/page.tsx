@@ -133,7 +133,7 @@ const DiscussionForum: React.FC = () => {
         setMessages(prev => [...prev, userMessage]);
         setInputMessage('');
         setIsLoading(true);
-        console.log('context:', messages.map(msg => `${msg.role}: ${msg.content}`).join('\n'));
+        console.log('context:', messages.slice(1).map(msg => `${msg.role}: ${msg.content}`).join('\n'));
 
         try {
             const response = await fetch('http://localhost:8000/v1/generate', {
@@ -143,7 +143,7 @@ const DiscussionForum: React.FC = () => {
                 },
                 body: JSON.stringify({
                     prompt: inputMessage,
-                    context: messages.map(msg => `${msg.role}: ${msg.content}`).join('\n')
+                    context:  messages.slice(1).map(msg => `${msg.role}: ${msg.content}`).join('\n')
                 })
             });
             console.log(response);

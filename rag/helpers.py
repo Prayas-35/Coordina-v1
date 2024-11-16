@@ -81,17 +81,31 @@ vector_store = TiDBVectorStore.from_documents(
     drop_existing_table=True,
 )
 
-retriever = vector_store.as_retriever(score_threshold=0.7)  # Increased threshold for better filtering
+retriever = vector_store.as_retriever(score_threshold=0.9)  # Increased threshold for better filtering
 
 config = CustomConfig(api_url="", api_key=GROQ_API_KEY)
 custom_llm = CustomAPILLM(config=config)
 
 async def generate(quest, conversation_history):
     rephrasing_prompt = f"""
-    Your name is Cody, an expert in natural language analysis. Rephrase the question concisely for querying a vector database while ensuring relevance to web development, blockchain, cybersecurity, or machine learning.
+        Your name is Cody, an expert in natural language processing and domain-specific analysis for web development, blockchain, cybersecurity, and machine learning.
 
-    QUESTION: {quest}
-    CONVERSATION HISTORY: {conversation_history}
+        Your task:
+        1. Rephrase the question concisely for querying a vector database, ensuring relevance to web development, blockchain, cybersecurity, or machine learning.
+        2. If the input asks for personal details (e.g., "What is your name?"), respond with: 
+        "My name is Cody, your coding mentor specializing in web development, blockchain, cybersecurity, and machine learning."
+        3. If the input is not a question (e.g., "Got it, thanks" or "Okay, Got it"), respond with an appropriate acknowledgment (e.g., "You're welcome!" or "Happy to help!").
+        4. If the question is ambiguous or lacks sufficient detail:
+        - Include a clarification note requesting more information.
+        - If a potential connection to the domains can be assumed based on the conversation history, ask for confirmation using this format:
+            "Are you asking about the intersection of [assumed topic] and [domain]? If yes, I can rephrase accordingly."
+        5. If the input is entirely unrelated to the specified domains and does not fall into the above categories, respond with:
+            "The question is outside the specified domains of expertise."
+        6. if it seems that the conversation has concluded, provide a positive and concise closing statement (e.g., "Bye, See you soon!").
+
+        ### Input:
+        QUESTION: {quest}
+        CONVERSATION HISTORY: {conversation_history}
     """
 
     client = Groq(api_key=GROQ_API_KEY)
@@ -104,26 +118,31 @@ async def generate(quest, conversation_history):
 
     prompt_template = f"""
     You are Cody, an expert coding mentor specializing in web development, machine learning, blockchain, and cybersecurity. 
-        Use the following context and conversation history to provide accurate, helpful responses.
+        Provide accurate, detailed, and helpful responses based strictly on the given context and conversation history. 
 
-        Guidelines:
-        1. Base your answers primarily on the provided context
-        2. If the context is insufficient, clearly state "I don't have enough information"
-        3. Provide code examples when relevant
-        4. Explain complex concepts in simple terms
-        5. Suggest best practices and potential pitfalls
+        ### Guidelines:
+        1. **Strict Relevance**: Only answer questions directly related to the provided context or conversation history. If a question is irrelevant to the context, clearly state: 
+        - "The question is outside the scope of the provided context, so I cannot answer it."
+        2. **Insufficient Information**: If the context or history does not provide enough details, state explicitly: 
+        - "I don't have enough information to provide a meaningful answer."
+        3. **Code Examples**: Where applicable, include concise and relevant code snippets that directly address the question.
+        4. **Clarity and Simplicity**: Break down complex concepts into simple, clear explanations for better understanding.
+        5. **Best Practices**: Highlight recommended approaches and warn against common mistakes or potential pitfalls.
+        6. **Closing Statement**: If the conversation appears to have concluded, provide a positive and concise closing statement.
+        7. **No Speculation**: Avoid speculative or generic answers. Stick strictly to the context provided.
 
-    PREVIOUS CONVERSATION:
-    {conversation_history}
-
-    CONTEXT: {{context}}
-
-    QUESTION: {{question}}
+        ### Input Structure:
+        - **Previous Conversation**: 
+        {conversation_history}
+        - **Context**: 
+        {{context}}
+        - **Question**: 
+        {{question}}
     """
 
     PROMPT = PromptTemplate(
         template=prompt_template,
-        input_variables=["context", "question", "conversation_history"],
+        input_variables=["context", "question"]
     )
 
     chain_type_kwargs = {"prompt": PROMPT}
@@ -137,5 +156,6 @@ async def generate(quest, conversation_history):
         chain_type_kwargs=chain_type_kwargs
     )
 
-    response = chain({"query": refined_question})
+    response = chain({"query": refined_question, "question": quest})
+    print(response)
     return response.get("result", "I don't know.")
