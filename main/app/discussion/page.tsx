@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -144,7 +144,7 @@ const DiscussionForum: React.FC = () => {
                 },
                 body: JSON.stringify({
                     prompt: inputMessage,
-                    context:  messages.slice(1).map(msg => `${msg.role}: ${msg.content}`).join('\n')
+                    context: messages.slice(1).map(msg => `${msg.role}: ${msg.content}`).join('\n')
                 })
             });
             console.log(response);
@@ -181,6 +181,22 @@ const DiscussionForum: React.FC = () => {
             sendMessage();
         }
     };
+
+    const messagesEndRef = useRef<HTMLDivElement>(null);
+    const scrollAreaRef = useRef<HTMLDivElement>(null);
+
+    const scrollToBottom = () => {
+        if (messagesEndRef.current) {
+            messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
+        }
+    };
+
+    useEffect(() => {
+        if (isChatboxOpen) {
+            const timer = setTimeout(scrollToBottom, 100);
+            return () => clearTimeout(timer);
+        }
+    }, [isChatboxOpen, messages]);
 
     return (
         <>
@@ -351,37 +367,43 @@ const DiscussionForum: React.FC = () => {
                         </button>
                     </div>
 
-                    <ScrollArea className="h-[400px] mb-4 p-2 dark:bg-gray-900 bg-gray-100 rounded">
-                        <div className="space-y-4">
-                            {messages.map((message, index) => (
-                                <div
-                                    key={index}
-                                    className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
-                                >
+                    <div className="h-[400px] mb-4 overflow-hidden">
+                        <ScrollArea
+                            ref={scrollAreaRef}
+                            className="h-full p-2 dark:bg-gray-900 bg-gray-100 rounded"
+                        >
+                            <div className="space-y-4">
+                                {messages.map((message, index) => (
                                     <div
-                                        className={`max-w-[80%] p-3 rounded-lg ${message.role === 'user'
-                                            ? 'bg-purple-600 text-white'
-                                            : 'bg-gray-200 dark:bg-gray-800 dark:text-gray-200'
-                                            }`}
+                                        key={index}
+                                        className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
                                     >
-                                        <ReactMarkdown className="text-sm prose dark:prose-invert max-w-none">
-                                            {message.content}
-                                        </ReactMarkdown>
-                                        <span className="text-xs opacity-70 mt-1 block">
-                                            {new Date(message.timestamp).toLocaleTimeString()}
-                                        </span>
+                                        <div
+                                            className={`max-w-[80%] p-3 rounded-lg ${message.role === 'user'
+                                                    ? 'bg-purple-600 text-white'
+                                                    : 'bg-gray-200 dark:bg-gray-800 dark:text-gray-200'
+                                                }`}
+                                        >
+                                            <ReactMarkdown className="text-sm prose dark:prose-invert max-w-none">
+                                                {message.content}
+                                            </ReactMarkdown>
+                                            <span className="text-xs opacity-70 mt-1 block">
+                                                {new Date(message.timestamp).toLocaleTimeString()}
+                                            </span>
+                                        </div>
                                     </div>
-                                </div>
-                            ))}
-                            {isLoading && (
-                                <div className="flex justify-start">
-                                    <div className="bg-gray-200 dark:bg-gray-800 p-3 rounded-lg">
-                                        <p className="text-sm">Thinking...</p>
+                                ))}
+                                {isLoading && (
+                                    <div className="flex justify-start">
+                                        <div className="bg-gray-200 dark:bg-gray-800 p-3 rounded-lg">
+                                            <p className="text-sm">Thinking...</p>
+                                        </div>
                                     </div>
-                                </div>
-                            )}
-                        </div>
-                    </ScrollArea>
+                                )}
+                                <div ref={messagesEndRef} />
+                            </div>
+                        </ScrollArea>
+                    </div>
 
                     <div className="flex items-center space-x-2">
                         <Textarea

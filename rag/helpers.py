@@ -191,7 +191,7 @@ async def generate(quest, conversation_history):
             "result": response.get("result", "I don't know."),
             "source_documents": [doc.page_content for doc in response.get("source_documents", [])]
         }
-        print(json.dumps(serializable_response, indent=4))
+        # print(json.dumps(serializable_response, indent=4))
         return serializable_response["result"]
 
     except Exception as e:
