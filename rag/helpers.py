@@ -76,7 +76,7 @@ capath = "/etc/ssl/certs/ca-certificates.crt" if os.path.exists("/etc/ssl/certs/
 vector_store = TiDBVectorStore.from_documents(
     documents=documents,
     embedding=embeddings,
-    table_name="CodingGuidance",
+    table_name="ConflictResolution",
     connection_string=f"mysql+mysqldb://2DXyH3NQNPFiCYW.root:UHsVdjbJrSqD2xpo@gateway01.ap-southeast-1.prod.aws.tidbcloud.com:4000/test?ssl_ca={capath}",
     distance_strategy="cosine",
     drop_existing_table=True,
@@ -119,6 +119,7 @@ async def generate(quest, conversation_history):
             messages=[{"role": "user", "content": rephrasing_prompt}],
             model=MODEL,
             temperature=TEMP,
+            max_tokens=150
         )
         refined_question = chat_completion.choices[0].message.content
 
