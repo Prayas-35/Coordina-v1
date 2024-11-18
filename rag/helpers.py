@@ -141,8 +141,7 @@ async def generate(quest, conversation_history):
             response = client.chat.completions.create(
                 messages=[{"role": "user", "content": prompt_template}],
                 model=MODEL,
-                temperature=TEMP,
-                max_tokens=150
+                temperature=TEMP
             )
             return response.choices[0].message.content
 
@@ -161,6 +160,7 @@ async def generate(quest, conversation_history):
             6. **Best Practices**: Highlight recommended approaches for interdepartmental collaboration, such as phased planning and shared resource management, and warn against common pitfalls.
             7. **Closing Statement**: If the conversation appears to have concluded, provide a positive and concise closing statement.
             8. **No Speculation**: Avoid speculative or generic answers. Stick strictly to the context provided.
+            9. **Concise Responses**: Limit your response to a maximum of 3 sentences or 100 words.
 
             ### Input Structure:
             - **Previous Conversation**: 
