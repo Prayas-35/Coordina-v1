@@ -118,8 +118,7 @@ async def generate(quest, conversation_history):
         chat_completion = client.chat.completions.create(
             messages=[{"role": "user", "content": rephrasing_prompt}],
             model=MODEL,
-            temperature=TEMP,
-            max_tokens=150
+            temperature=TEMP
         )
         refined_question = chat_completion.choices[0].message.content
 
@@ -143,6 +142,7 @@ async def generate(quest, conversation_history):
                 messages=[{"role": "user", "content": prompt_template}],
                 model=MODEL,
                 temperature=TEMP,
+                max_tokens=150
             )
             return response.choices[0].message.content
 
