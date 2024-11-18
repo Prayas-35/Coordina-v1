@@ -1,6 +1,5 @@
 "use client";
 
-
 import React, { useState, useEffect, useRef, use } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -21,7 +20,7 @@ import { LinkPreview } from "@/components/ui/link-preview";
 import "leaflet/dist/leaflet.css";
 import Link from "next/link";
 import { GoogleGenerativeAI } from "@google/generative-ai";
-import ReactMarkdown from 'react-markdown';
+import ReactMarkdown from "react-markdown";
 
 // Interfaces
 interface Project {
@@ -68,10 +67,21 @@ interface ChartData {
 ChartJS.register(ArcElement, Tooltip, Legend);
 
 // Dynamically import Leaflet components
-const MapContainer = dynamic(() => import("react-leaflet").then((mod) => mod.MapContainer), { ssr: false });
-const TileLayer = dynamic(() => import("react-leaflet").then((mod) => mod.TileLayer), { ssr: false });
-const Marker = dynamic(() => import("react-leaflet").then((mod) => mod.Marker), { ssr: false });
-const Popup = dynamic(() => import("react-leaflet").then((mod) => mod.Popup), { ssr: false });
+const MapContainer = dynamic(
+  () => import("react-leaflet").then((mod) => mod.MapContainer),
+  { ssr: false }
+);
+const TileLayer = dynamic(
+  () => import("react-leaflet").then((mod) => mod.TileLayer),
+  { ssr: false }
+);
+const Marker = dynamic(
+  () => import("react-leaflet").then((mod) => mod.Marker),
+  { ssr: false }
+);
+const Popup = dynamic(() => import("react-leaflet").then((mod) => mod.Popup), {
+  ssr: false,
+});
 
 export default function Home(): JSX.Element {
   const { token } = useAuth();
@@ -80,7 +90,9 @@ export default function Home(): JSX.Element {
   const [isClient, setIsClient] = useState<boolean>(false);
   const mapInitializedRef = useRef(false);
 
-  const genAI = new GoogleGenerativeAI(process.env.NEXT_PUBLIC_GEMINI_API_KEY as string);
+  const genAI = new GoogleGenerativeAI(
+    process.env.NEXT_PUBLIC_GEMINI_API_KEY as string
+  );
   const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
   const [resources] = useState<Resource[]>([
@@ -132,7 +144,7 @@ export default function Home(): JSX.Element {
       } catch (error) {
         console.error("Failed to fetch department name", error);
       }
-    }
+    };
     if (token) {
       fetchDepartments();
     }
@@ -214,11 +226,56 @@ export default function Home(): JSX.Element {
         Resources Used: ${reportData.resourcesUsed}
         Cost: ${reportData.cost}
         Other Details: ${reportData.otherDetails}
+
+        You can take this as an example and modify it as per your requirements:
+                  ---
+
+          **Detailed Project Report: Water Pipeline Installation**
+
+          ---
+
+          ### Department:
+          Water Department
+
+          ### Project Name:
+          Water Pipeline Installation
+
+          ### Location:
+          Ward 40, Kolkata
+
+          ### Project Overview:
+          The Water Pipeline Installation project in Ward 40, Kolkata, aims to enhance the water distribution infrastructure, ensuring reliable access to clean water for local residents. This installation is a crucial step toward addressing the growing water demand and supporting future urban growth in the area. The project focuses on installing durable and high-capacity water pipelines, aiming for long-term sustainability and resilience against common infrastructural challenges.
+
+          ### Duration:
+          1 month
+
+          ### Objectives:
+          - Establish an efficient and sustainable water distribution network.
+          - Reduce water supply disruptions through robust pipeline systems.
+          - Minimize maintenance needs by utilizing high-quality materials.
+
+          ### Resources Utilized:
+          - **Cement:** Essential for securing pipeline connections and ensuring structural integrity.
+          - **PVC Pipes:** High-durability pipes were selected to reduce the risk of corrosion and leakage.
+          - **Wire Mesh:** Reinforced with wire mesh to enhance the structural resilience of the pipeline installations.
+
+          ### Project Cost:
+          Total: ₹100,000
+
+          ### Project Implementation:
+          The project was executed by a team of skilled personnel, ensuring adherence to quality standards and project timelines. Regular quality assessments were conducted to verify the secure placement and alignment of pipes and connections.
+
+          ### Outcomes and Impact:
+          This project successfully strengthened the water supply infrastructure in Ward 40, providing a consistent and safe water supply for the community. Additionally, the project’s success has set a precedent for similar infrastructure improvements in other areas.
+
+          ### Additional Notes:
+          N/A
       `;
       const result = await model.generateContent(report);
-      const cleanReport = result.response.text()
+      const cleanReport = result.response
+        .text()
         // .replace(/[#\*]/g, '')  // Removes asterisks and hashes
-        .trim();  // Removes leading and trailing whitespaces
+        .trim(); // Removes leading and trailing whitespaces
       setGeneratedReport(cleanReport);
     } catch (error) {
       console.error("Failed to generate report", error);
@@ -250,7 +307,10 @@ export default function Home(): JSX.Element {
                 <CardTitle>Projects List</CardTitle>
               </CardHeader>
               <CardContent className="overflow-y-auto">
-                <div style={{ height: "200px" }} className={projects.length === 0 ? "flex items-center" : ""}>
+                <div
+                  style={{ height: "200px" }}
+                  className={projects.length === 0 ? "flex items-center" : ""}
+                >
                   {projects.length > 0 ? (
                     projects.map((project) => (
                       <Collapsible key={project.id} className="mb-2">
