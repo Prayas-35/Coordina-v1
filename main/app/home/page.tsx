@@ -89,11 +89,14 @@ export default function Home(): JSX.Element {
   const [isGenerating, setIsGenerating] = useState<boolean>(false);
   const [isClient, setIsClient] = useState<boolean>(false);
   const mapInitializedRef = useRef(false);
+  const [reportHeight, setReportHeight] = useState(256); // 256px is equivalent to h-64
+  const resizeRef = useRef<HTMLDivElement>(null);
+  const reportRef = useRef<HTMLDivElement>(null);
 
   const genAI = new GoogleGenerativeAI(
     process.env.NEXT_PUBLIC_GEMINI_API_KEY as string
   );
-  const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+  const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash-8b" });
 
   const [resources] = useState<Resource[]>([
     { name: "Resource A", amount: 100, unit: "Units" },
@@ -229,46 +232,45 @@ export default function Home(): JSX.Element {
 
         You can take this as an example and modify it as per your requirements:
                   ---
-
           **Detailed Project Report: Water Pipeline Installation**
 
           ---
 
-          ### Department:
+          #### Department:
           Water Department
 
-          ### Project Name:
+          #### Project Name:
           Water Pipeline Installation
 
-          ### Location:
+          #### Location:
           Ward 40, Kolkata
 
-          ### Project Overview:
+          #### Project Overview:
           The Water Pipeline Installation project in Ward 40, Kolkata, aims to enhance the water distribution infrastructure, ensuring reliable access to clean water for local residents. This installation is a crucial step toward addressing the growing water demand and supporting future urban growth in the area. The project focuses on installing durable and high-capacity water pipelines, aiming for long-term sustainability and resilience against common infrastructural challenges.
 
-          ### Duration:
+          #### Duration:
           1 month
 
-          ### Objectives:
+          #### Objectives:
           - Establish an efficient and sustainable water distribution network.
           - Reduce water supply disruptions through robust pipeline systems.
           - Minimize maintenance needs by utilizing high-quality materials.
 
-          ### Resources Utilized:
+          #### Resources Utilized:
           - **Cement:** Essential for securing pipeline connections and ensuring structural integrity.
           - **PVC Pipes:** High-durability pipes were selected to reduce the risk of corrosion and leakage.
           - **Wire Mesh:** Reinforced with wire mesh to enhance the structural resilience of the pipeline installations.
 
-          ### Project Cost:
+          #### Project Cost:
           Total: ₹100,000
 
-          ### Project Implementation:
+          #### Project Implementation:
           The project was executed by a team of skilled personnel, ensuring adherence to quality standards and project timelines. Regular quality assessments were conducted to verify the secure placement and alignment of pipes and connections.
 
-          ### Outcomes and Impact:
+          #### Outcomes and Impact:
           This project successfully strengthened the water supply infrastructure in Ward 40, providing a consistent and safe water supply for the community. Additionally, the project’s success has set a precedent for similar infrastructure improvements in other areas.
 
-          ### Additional Notes:
+          #### Additional Notes:
           N/A
       `;
       const result = await model.generateContent(report);
@@ -292,6 +294,42 @@ export default function Home(): JSX.Element {
     element.click();
     document.body.removeChild(element);
   };
+
+  
+
+  useEffect(() => {
+    const resizeHandle = resizeRef.current;
+    const reportContainer = reportRef.current;
+    if (!resizeHandle || !reportContainer) return;
+
+    let startY: number;
+    let startHeight: number;
+
+    const onMouseDown = (e: MouseEvent) => {
+      startY = e.clientY;
+      startHeight = reportContainer.offsetHeight;
+      document.addEventListener('mousemove', onMouseMove);
+      document.addEventListener('mouseup', onMouseUp);
+    };
+
+    const onMouseMove = (e: MouseEvent) => {
+      const delta = e.clientY - startY;
+      setReportHeight(Math.max(64, startHeight + delta)); // Minimum height of 64px
+    };
+
+    const onMouseUp = () => {
+      document.removeEventListener('mousemove', onMouseMove);
+      document.removeEventListener('mouseup', onMouseUp);
+    };
+
+    resizeHandle.addEventListener('mousedown', onMouseDown);
+
+    return () => {
+      resizeHandle.removeEventListener('mousedown', onMouseDown);
+      document.removeEventListener('mousemove', onMouseMove);
+      document.removeEventListener('mouseup', onMouseUp);
+    };
+  }, []);
 
   return (
     <>
@@ -451,7 +489,7 @@ export default function Home(): JSX.Element {
                   onChange={handleInputChange}
                   className="mb-2"
                 />
-                <Button onClick={generateReport} disabled={isGenerating}>
+                <Button onClick={generateReport} disabled={isGenerating} className="w-full">
                   {isGenerating ? (
                     <>
                       <svg
@@ -482,13 +520,21 @@ export default function Home(): JSX.Element {
                 </Button>
               </div>
               <div>
-                <Label htmlFor="generatedReport">Generated Report</Label>
-                <Textarea
-                  id="generatedReport"
-                  value={generatedReport}
-                  readOnly
-                  className="h-64 mb-2"
-                />
+              <Label htmlFor="generatedReport">Generated Report</Label>
+              <div className="relative">
+                  <div
+                    ref={reportRef}
+                    className="border rounded-md p-4 mb-2 overflow-y-auto bg-background"
+                    style={{ height: `${reportHeight}px` }}
+                  >
+                    <ReactMarkdown className="text-sm">{generatedReport}</ReactMarkdown>
+                  </div>
+                  <div
+                    ref={resizeRef}
+                    className="absolute bottom-0 left-0 right-0 h-2 bg-secondary cursor-ns-resize"
+                    aria-hidden="true"
+                  />
+                </div>
                 <Button
                   onClick={downloadReport}
                   className="w-full"
