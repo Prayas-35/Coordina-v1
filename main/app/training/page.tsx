@@ -24,7 +24,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-// Define Workshop interface
+// Define types for the workshop data
 interface Workshop {
   id: number;
   name: string;
@@ -33,7 +33,7 @@ interface Workshop {
   date: string;
   time: string;
   link: string;
-  status: 'Live' | 'Upcoming';
+  status: "Live" | "Upcoming";
 }
 
 // Mock data for workshops
@@ -60,7 +60,7 @@ const workshops: Workshop[] = [
   },
 ];
 
-export default function Component(): React.JSX.Element {
+export default function Component() {
   const [searchTerm, setSearchTerm] = useState<string>("");
   const [filter, setFilter] = useState<string>("all");
   const [isExpanded, setIsExpanded] = useState<boolean>(false);
@@ -84,7 +84,7 @@ export default function Component(): React.JSX.Element {
         (filter === "live" && workshop.status === "Live"))
   );
 
-  const handleCalendarClick = (): void => {
+  const handleCalendarClick = () => {
     console.log("Calendar icon clicked");
     // Add your calendar logic here
   };
@@ -125,6 +125,17 @@ export default function Component(): React.JSX.Element {
             <h1 className="ext-4xl font-bold text-center mb-8 bg-clip-text text-transparent bg-no-repeat bg-gradient-to-r from-purple-500 via-violet-500 to-pink-500">
               Training and Workshops Page
             </h1>
+            {/* <Button
+              variant="outline"
+              size="icon"
+              onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+            >
+              {theme === "dark" ? (
+                <Sun className="h-4 w-4" />
+              ) : (
+                <Moon className="h-4 w-4" />
+              )}
+            </Button> */}
           </div>
 
           {/* Search, Filter, and Calendar */}
